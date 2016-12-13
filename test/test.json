@@ -1,0 +1,10 @@
+{
+    "firstName":"John",
+    "lastName": "Doe",
+    "number": 123,
+    "object": {
+	"item1" : "abc",
+	"item2" : 123,
+	"array" : ["abc",123, {} ]
+    }
+}

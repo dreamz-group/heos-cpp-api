@@ -8,6 +8,8 @@
 #include <arpa/inet.h>
 #include <netinet/tcp.h>
 
+#include "json.h"
+
 static __thread int _socket = -1; 
 static const char* basicCommand[] = {"system/heart_beat",
 			             "player/get_players",
@@ -81,18 +83,25 @@ int heosSocketWrite(uint8_t* buf,size_t len)
 int heosSocketBasicCommand(uint8_t commandId)
 {
     uint8_t buf[1024];
-    size_t len = snprintf(buf,sizeof(buf),"heos://%s\r\n",basicCommand[commandId]);
+    size_t len = snprintf((char*)buf,sizeof(buf),"heos://%s\r\n",basicCommand[commandId]);
     return heosSocketWrite( buf, len );
 }
 
 int heosSocketPlayerCommand(uint8_t commandId, uint32_t pid)
 {
     uint8_t buf[1024];
-    size_t len = snprintf(buf,sizeof(buf),"heos://%s?pid=%d\r\n",playerCommand[commandId], pid);
+    size_t len = snprintf((char*)buf,sizeof(buf),"heos://%s?pid=%d\r\n",playerCommand[commandId], pid);
     return heosSocketWrite( buf, len );
 }
 
-int heosSocketRecv(uint32_t size, char* buf)
+int heosSockerPlayStream(const char* url, uint32_t pid)
+{
+    uint8_t buf[1024];
+    size_t len = snprintf((char*)buf,sizeof(buf),"heos://browser/play_stream?pid=%d&url=%s\r\n",pid,url);
+    return heosSocketWrite( buf, len );
+}
+
+int heosSocketRecv(uint32_t size, uint8_t* buf)
 {
     int timeout = 1;
     int pos = 0;
@@ -147,11 +156,32 @@ void heosClose()
     _socket = -1;
 }
 
+int print( uint8_t* buf )
+{
+    json::Parse p;
+    json::Value* v = p.read(buf);
+    if( v == NULL )
+    {
+	fprintf(stderr,"Failed to parse responce: %s\n",buf);
+	return -1;
+    }
+    std::cout << *v;
+    delete v;
+    return 0;
+}
+
 int main(int argc,char* argv[])
 {
-    char buf[2048];
-    
+    uint8_t buf[2048];
+    uint32_t pId = 943328861; // Player ID.
     heosSocketInit();
+    heosSockerPlayStream("http://50.7.77.114:8101/listen.pls",pId);
+    if( heosSocketRecv(sizeof(buf),buf) < 0 )
+    {
+	fprintf(stderr,"Failed to start stream %s\n",buf);
+	return -1;
+    }
+    print(buf);
     for( uint8_t i=0; basicCommand[i] != NULL; ++i )
     {
 	if( heosSocketBasicCommand(i) < 0 )
@@ -164,11 +194,15 @@ int main(int argc,char* argv[])
 	    fprintf(stderr,"Failed test (recive) on command: %d '%s'\n",i,basicCommand[i]);
 	    break;
 	}
-	printf("%s",buf);
+	printf("%s\n",buf);
+	print(buf);
     }
+    heosClose();
+    return 0;
+    
     for( uint8_t i=0; playerCommand[i] != NULL; ++i )
     {
-	if( heosSocketPlayerCommand(i,943328861) < 0 )
+	if( heosSocketPlayerCommand(i,pId) < 0 )
 	{
 	    fprintf(stderr,"Failed test on command: %d '%s'\n",i,playerCommand[i]);
 	    break;
@@ -179,6 +213,6 @@ int main(int argc,char* argv[])
 	    break;
 	}
 	printf("%s",buf);
-    }
+    }    
     heosClose();
 }
