@@ -73,20 +73,6 @@ type_t Number::getType() const
     return NUMBER;
 }
     
-bool digit( uint8_t*& b, uint64_t& value )
-{
-    if( *b < '0' || *b > '9')
-    {
-	return false;
-    }
-    while( *b >= '0' && *b <= '9')
-    {
-	value = (value * 10) + (*b - '0');
-	++b;
-    }
-    return true;
-}
-
 Value* Number::parse(uint8_t*& b, uint32_t& line)
 {
     uint64_t value   = 0;

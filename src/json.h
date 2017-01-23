@@ -59,6 +59,19 @@ namespace json
 	static Value* parse(uint8_t*& b, uint32_t& line);
     private:
 	friend std::ostream& operator<<(std::ostream& os, const Number* obj);
+	static inline bool digit( uint8_t*& b, uint64_t& value )
+	{
+	    if( *b < '0' || *b > '9')
+	    {
+		return false;
+	    }
+	    while( *b >= '0' && *b <= '9')
+	    {
+		value = (value * 10) + (*b - '0');
+		++b;
+	    }
+	    return true;
+	}
     };
 	
     class String : public virtual Value
@@ -123,6 +136,5 @@ namespace json
 	Value* read(uint8_t* b);
     };   
 }
-//std::ostream& operator<<(std::ostream& os, const json::Value& obj);
 
 #endif // __JSON_H__
