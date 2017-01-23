@@ -165,7 +165,7 @@ int print( uint8_t* buf )
 	fprintf(stderr,"Failed to parse responce: %s\n",buf);
 	return -1;
     }
-    std::cout << *v;
+    std::cout << v;
     delete v;
     return 0;
 }
