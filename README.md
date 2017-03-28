@@ -1,1 +1,1 @@
-# heos-c-api
+# heos-cpp-api
