@@ -1,18 +1,18 @@
 /*
-    This file is part of heos-c-api.
+    This file is part of heos-cpp-api.
 
     heos-cpp-api is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    heos-c-api is distributed in the hope that it will be useful,
+    heos-cpp-api is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with heos-c-api.  If not, see <http://www.gnu.org/licenses/>.
+    along with heos-cpp-api.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <unistd.h>
@@ -24,9 +24,11 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netinet/tcp.h>
+#include <assert.h>
 
 #include "json.h"
 #include "heosSocket.h"
+#include "command.h"
 
 int main(int argc,char* argv[])
 {
@@ -39,8 +41,8 @@ int main(int argc,char* argv[])
     {
         fprintf(stderr,"Failed to connect to device %s Error message '%s'\n",addr, socket.error);
 	return -1;
-    }
-    printf("PlayStream\n");
+    }    
+    /*    printf("PlayStream\n");
     socket.PlayStream("http://50.7.77.114:8101/listen.pls",pId);
     if( socket.Recv(sizeof(buf),buf) < 0 )
     {
@@ -48,6 +50,7 @@ int main(int argc,char* argv[])
 	return -1;
     }
     socket.Print(buf);
+    */
     printf("Basic Commands\n\n");
     for( uint8_t i=0; heosSocket::basicCommand[i] != NULL; ++i )
     {
@@ -64,6 +67,7 @@ int main(int argc,char* argv[])
 	printf("Command: %s\n", heosSocket::basicCommand[i]);
 	socket.Print(buf);
     }
+    /*
     printf("Player Commands\n\n");
     for( uint8_t i=0; heosSocket::playerCommand[i] != NULL; ++i )
     {
@@ -79,6 +83,71 @@ int main(int argc,char* argv[])
 	}
 	printf("Command: %s\n",heosSocket::playerCommand[i]);
 	socket.Print(buf);
-    }    
+    }
+*/
+    printf("SetPlayMode\n");
+    if( socket.SetPlayMode( RepeatMode::all, ShuffleMode::on, pId ) < 0 )
+    {
+	fprintf(stderr,"Failed test SetPlayMode error '%s'\n", socket.error );
+	return -1;
+    }
+    
+    if( socket.Recv(sizeof(buf),buf) < 0 )
+    {
+	fprintf(stderr,"Failed test (recive) message '%s'\n",socket.error);
+	return -1;
+    }
+    socket.Print(buf);
+    
+    json::Parse p;
+    json::Value* v = p.read(buf);
+    if( v == NULL )
+    {
+	fprintf(stderr,"Failed to parse responce %s", buf );
+	delete v;
+	return -1;
+    }
+    
+    assert( v->getType() == json::OBJECT );
+    json::Object* o    = dynamic_cast<json::Object*>(v);
+    json::Object* heos = dynamic_cast<json::Object*>((*o)["heos"]);
+    assert( heos != NULL );
+
+    json::Value* rv = (*heos)["result"];
+    assert( rv->getType() == json::STRING );
+    json::String* result = dynamic_cast<json::String*>(rv);
+
+    if( *result != "success" )
+    {
+	fprintf(stderr,"status code on success!? %s", result->c_str() );
+	delete v;
+	return -1;
+    }
+
+    json::Value* mv = (*heos)["message"];
+    assert( mv->getType() == json::STRING );
+    json::String* message = dynamic_cast<json::String*>(mv);
+    Command values;
+    if( Command::parse(message->str(),values) <= 0 )
+    {
+	fprintf(stderr,"Command::parse faild to parse string '%s'", message->str().c_str() );
+	delete v;
+	return -1;
+    }
+    for( int i=0; i < values.size(); ++i )
+    {
+	std::cout << *values[i] << std::endl;
+    }
+
+    if( strcmp( values["repeat"],RepeatMode::all ) != 0 )
+    {
+	fprintf(stderr,"Unexpected repeat mode expected:%s recived%s\n", RepeatMode::all, values["repeat"] );
+    }
+    
+    if( strcmp( values["shuffle"],ShuffleMode::on ) != 0 )	
+    {
+	fprintf(stderr,"Unexpected shuffle mode expected:%s recived%s\n", ShuffleMode::on, values["shuffle"] );
+    }
+    delete v;
     socket.Close();
 }
