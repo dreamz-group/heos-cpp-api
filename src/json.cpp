@@ -22,6 +22,7 @@
 #include <vector>
 #include <malloc.h>
 #include <math.h>
+#include <assert.h>
 
 #include "json.h"
 
@@ -36,32 +37,79 @@ Value::~Value()
 {
 }
 
-Value* Value::parse( uint8_t*& b, uint32_t& line )
+Value* Value::parse(uint8_t*& b, uint32_t& line)
 {
     Value* rtn = NULL;
-    skip( b, line);
-    if( *b  == '"' )
+    skip(b, line);
+    if (*b == '"')
     {
-	rtn = String::parse(b,line);
+        rtn = String::parse(b, line);
     }
-    else if( *b >= '0' && *b <= '9' )
+    else if ((*b >= '0' && *b <= '9') || *b == '-')
     {
-	rtn = Number::parse(b,line);
+        rtn = Number::parse(b, line);
     }
-    else if( *b == '[' )
+    else if (*b == '[')
     {
-	rtn = Array::parse(b,line);
+        rtn = Array::parse(b, line);
     }
-    else if( *b == '{' )
+    else if (*b == '{')
     {
-	rtn = Object::parse(b,line);
+        rtn = Object::parse(b, line);
+    }
+    else if( (rtn = Bool::parse(b, line)) != NULL )
+    {
+
     }
     else
     {
-	fprintf(stderr,"Type mismatch on line:%d\n",line);
+        fprintf(stderr, "Type mismatch on line:%d\n", line);
     }
     return rtn;
 }
+
+Bool::Bool()
+{
+}
+
+Bool::Bool(bool b)
+{
+    _value = b;
+}
+
+Bool::~Bool()
+{
+}
+
+type_t Bool::getType() const
+{
+    return BOOL;
+}
+
+Value* Bool::parse(uint8_t*& b, uint32_t& line)
+{
+    skip(b,line);
+    if ((*b     == 'T' || *b     == 't') &&
+        (*(b+1) == 'R' || *(b+1) == 'r') &&
+        (*(b+2) == 'U' || *(b+2) == 'u') &&
+        (*(b+3) == 'E' || *(b+3) == 'e'))
+    {
+        b+=4;
+        return new Bool(true);
+    }
+    else if ((*b     == 'F' || *b     == 'f') &&
+             (*(b+1) == 'A' || *(b+1) == 'a') &&
+             (*(b+2) == 'L' || *(b+2) == 'l') &&
+             (*(b+3) == 'S' || *(b+3) == 's') &&
+             (*(b+4) == 'E' || *(b+4) == 'e'))
+    {
+        b+=5;
+        return new Bool(false);
+    }
+    return NULL;
+}
+
+
 
 Number::Number(uint64_t v)
 {
@@ -80,125 +128,131 @@ Number::Number(double v)
     _type = DOUBLE;
     _value.d = v;
 }
-  
+
 Number::~Number()
 {
 }
-  
+
+uint64_t Number::value()
+{
+    assert( _type == UINT64 );
+    return _value.ui;
+}
+
 type_t Number::getType() const
 {
     return NUMBER;
 }
-    
+
 Value* Number::parse(uint8_t*& b, uint32_t& line)
 {
-    uint64_t value   = 0;
-    bool     dec     = false;
-    bool     neg     = false;
-    double   dbl     = 0;
-    if( *b == '-' )
+    uint64_t value = 0;
+    bool     dec = false;
+    bool     neg = false;
+    double   dbl = 0;
+    if (*b == '-')
     {
-	neg = true;
-	++b;
-    }
-    
-    if( !digit(b,value) )
-    {
-	fprintf(stderr,"Not a number at line:%d\n", line );
-	return NULL;
+        neg = true;
+        ++b;
     }
 
-    if( *b == '.' )
+    if (!digit(b, value))
     {
-	dbl = (double)value;
-	uint8_t* t = b;
-	dec = true;
-	++b;
-	if( !digit(b,value) )
-	{
-	    fprintf(stderr,"Must be atleast one digit after '.' at line:%d\n", line);
-	    return NULL;
-	}
-	dbl += (double)value / pow(10, b-t);
+        fprintf(stderr, "Not a number at line:%d\n", line);
+        return NULL;
     }
-    if( *b == 'e' || *b == 'E' )
+
+    if (*b == '.')
     {
-	fprintf(stderr,"Number in format x.yEn not implemented at line:%d\n", line);
-	return NULL;
+        dbl = (double)value;
+        uint8_t* t = b;
+        dec = true;
+        ++b;
+        if (!digit(b, value))
+        {
+            fprintf(stderr, "Must be atleast one digit after '.' at line:%d\n", line);
+            return NULL;
+        }
+        dbl += (double)value / pow(10, b - t);
     }
-    if( dec )
+    if (*b == 'e' || *b == 'E')
     {
-	return new Number(neg ? -dbl : dbl);
+        fprintf(stderr, "Number in format x.yEn not implemented at line:%d\n", line);
+        return NULL;
     }
-    return neg ? new Number( - (int64_t)value ) : new Number( value );
+    if (dec)
+    {
+        return new Number(neg ? -dbl : dbl);
+    }
+    return neg ? new Number(-(int64_t)value) : new Number(value);
 }
 
 std::ostream& operator<<(std::ostream& os, const Number* obj)
 {
-    switch( obj->_type )
+    switch (obj->_type)
     {
     case Number::UINT64:
-	os << obj->_value.ui;
-	break;
+        os << obj->_value.ui;
+        break;
     case Number::INT64:
-	os << obj->_value.i;
-	break;
+        os << obj->_value.i;
+        break;
     case Number::DOUBLE:
-	os << obj->_value.d;
-	break;
+        os << obj->_value.d;
+        break;
     default:
-	os << "Invalid number type:" << obj->_type << std::endl;
+        os << "Invalid number type:" << obj->_type << std::endl;
         break;
     }
     return os;
 }
-  
+
 String::String()
 {
 }
-  
+
 String::~String()
 {
 }
-  
+
 type_t String::getType() const
 {
     return STRING;
 }
-	
+
 Value* String::parse(uint8_t*& b, uint32_t& line)
 {
     String* rtn = new String();
-    if( parse_string( rtn->_value, b, line) )
+    if (parse_string(rtn->_value, b, line))
     {
-	return rtn;
+        return rtn;
     }
     delete rtn;
-    return NULL;	    
+    return NULL;
 }
 
-bool String::parse_string( std::string& id, uint8_t*& b, uint32_t& line)
+bool String::parse_string(std::string& id, uint8_t*& b, uint32_t& line)
 {
-    if( *b != '\"' )
+    if (*b != '\"')
     {
-	fprintf(stderr,"Parse error missing start \" of id at line:%u\n", line );
-	return false;
+        fprintf(stderr, "Parse error missing start \" of id at line:%u\n", line);
+        return false;
     }
     ++b;
     id = "";
 
-    while( (*b == ' ' ) ||
-	   (*b == '!' ) ||
-	   (*b >= '#' && *b <= '[') ||
-	   (*b >= ']' && *b <= '~') )
+    while ((*b == ' ') ||
+        (*b == '!') ||
+        (*b >= '#' && *b <= '[') ||
+        (*b >= ']' && *b <= '~'))
     {
-	id += *(char*)b;
-		++b;
+        id += *(char*)b;
+        ++b;
     }
-    if( *b != '\"' )
+    if (*b != '\"')
     {
-	fprintf(stderr,"Parse error missing end \" of id at line:%u on char '%c' \n", line, *b );
-	return false;
+        fprintf(stderr, "Parse error missing end \" of id at line:%u on char '%c' \n", line, *b);
+        return false;
     }
     ++b;
     return true;
@@ -217,9 +271,9 @@ Array::Array()
 Array::~Array()
 {
     json::Array::VALUES::iterator itr = _items.begin();
-    for(; itr != _items.end(); ++itr )
+    for (; itr != _items.end(); ++itr)
     {
-	delete *itr;
+        delete *itr;
     }
 }
 
@@ -228,48 +282,49 @@ type_t Array::getType() const
     return ARRAY;
 }
 
-Value* Array::parse(uint8_t*& b, uint32_t& line )
+Value* Array::parse(uint8_t*& b, uint32_t& line)
 {
-    skip(b,line);
-    if( *b != '[' )
-    {		
-	fprintf(stderr,"Parse error missing [ at line:%u\n", line );
-	return NULL;
+    skip(b, line);
+    if (*b != '[')
+    {
+        fprintf(stderr, "Parse error missing [ at line:%u\n", line);
+        return NULL;
     }
     ++b;
+    skip(b, line);
     Array* arr = new Array();
-    if( *b == ']' )
+    if (*b == ']')
     {
-	++b;
-	return arr;
+        ++b;
+        return arr;
     }
-    
+
     bool more = true;
     do
     {
-	Value* rtn = Value::parse(b,line);
-	if( rtn == NULL )
-	{
-	    delete arr;
-	    return NULL;
-	}	
-	arr->_items.push_back( rtn );
-	skip(b,line);
-	if( *b != ',' )
-	{
-	    more = false;
-	}
-	else
-	{
-	    ++b;
-	}
-    }while( more );
-    
-    if( *b != ']' )
+        Value* rtn = Value::parse(b, line);
+        if (rtn == NULL)
+        {
+            delete arr;
+            return NULL;
+        }
+        arr->_items.push_back(rtn);
+        skip(b, line);
+        if (*b != ',')
+        {
+            more = false;
+        }
+        else
+        {
+            ++b;
+        }
+    } while (more);
+
+    if (*b != ']')
     {
-	fprintf(stderr,"Parse error missing ] at line:%u\n", line );
-	delete arr;
-	return NULL;
+        fprintf(stderr, "Parse error missing ] at line:%u\n", line);
+        delete arr;
+        return NULL;
     }
     ++b;
     return arr;
@@ -279,25 +334,25 @@ std::ostream& operator<<(std::ostream& os, const Array* arr)
 {
     os << "[" << std::endl;
     json::Array::VALUES::const_iterator itr = arr->_items.begin();
-    while( itr != arr->_items.end() )
+    while (itr != arr->_items.end())
     {
         os << *itr;
-	++itr;
-	if( itr != arr->_items.end() )
-	{
-	    os << "," << std::endl;
-	}
-	else
-	{
-	    os << std::endl;
-	}
+        ++itr;
+        if (itr != arr->_items.end())
+        {
+            os << "," << std::endl;
+        }
+        else
+        {
+            os << std::endl;
+        }
     }
-    
+
     os << "]";
     return os;
 }
 
-  
+
 Object::Object()
 {
 }
@@ -305,9 +360,9 @@ Object::Object()
 Object::~Object()
 {
     json::Object::VALUES::iterator itr = _items.begin();
-    for( ; itr != _items.end(); ++itr )
+    for (; itr != _items.end(); ++itr)
     {
-	delete itr->second;
+        delete itr->second;
     }
 }
 
@@ -315,71 +370,71 @@ type_t Object::getType() const
 {
     return OBJECT;
 }
-    
-bool Object::value_pair( Object* obj, uint8_t*& b, uint32_t& line, bool& more )
+
+bool Object::value_pair(Object* obj, uint8_t*& b, uint32_t& line, bool& more)
 {
     // Parse id
-    skip( b, line );
+    skip(b, line);
     std::string id;
-    if( !String::parse_string(id,b,line) )
+    if (!String::parse_string(id, b, line))
     {
-	return false;
+        return false;
     }
-    skip( b, line );
-    if( *b != ':' )
+    skip(b, line);
+    if (*b != ':')
     {
-	fprintf(stderr,"Parse error missing : at line:%u\n", line );
-	return false;
+        fprintf(stderr, "Parse error missing : at line:%u\n", line);
+        return false;
     }
     ++b;
-    
-    Value* rtn = Value::parse(b,line);
+
+    Value* rtn = Value::parse(b, line);
     // TODO bool, null
-    if( rtn == NULL )
+    if (rtn == NULL)
     {
-	return false;
+        return false;
     }
-    obj->_items.push_back( VALUE(id,rtn) );
-    skip(b,line);
-    if( *b != ',' )
+    obj->_items.push_back(VALUE(id, rtn));
+    skip(b, line);
+    if (*b != ',')
     {
-	more = false;
+        more = false;
     }
     else
     {
-	++b;
+        ++b;
     }
     return true;
 }
 
-Value* Object::parse(uint8_t*& b, uint32_t& line )
+Value* Object::parse(uint8_t*& b, uint32_t& line)
 {
-    skip(b,line);
-    if( *b != '{' )
-    {		
-	fprintf(stderr,"Parse error missing { at line:%u\n", line );
-	return NULL;
+    skip(b, line);
+    if (*b != '{')
+    {
+        fprintf(stderr, "Parse error missing { at line:%u\n", line);
+        return NULL;
     }
     ++b;
     Object* obj = new Object();
-    if( *b == '}' )
+    if (*b == '}')
     {
-	++b;
-	return obj;
+        ++b;
+        return obj;
     }
     bool more = true;
-    while( more )
+    while (more)
     {
-	if( !obj->value_pair( obj, b, line, more ) )
-	{
-	    return NULL;
-	}
+        if (!obj->value_pair(obj, b, line, more))
+        {
+            return NULL;
+        }
     }
-    if( *b != '}' )
+    if (*b != '}')
     {
-	fprintf(stderr,"Parse error missing } at line:%u\n", line );
-	delete obj;
-	return NULL;
+        fprintf(stderr, "Parse error missing } at line:%u\n", line);
+        delete obj;
+        return NULL;
     }
     ++b;
     return obj;
@@ -389,20 +444,20 @@ std::ostream& operator<<(std::ostream& os, const Object* obj)
 {
     os << "{" << std::endl;
     json::Object::VALUES::const_iterator itr = obj->_items.begin();
-    while( itr != obj->_items.end() )
+    while (itr != obj->_items.end())
     {
-	os << "\"" << itr->first << "\" : " << itr->second;
-	++itr;
-	if( itr != obj->_items.end() )
-	{
-	    os << "," << std::endl;
-	}
-	else
-	{
-	    os << std::endl;
-	}
+        os << "\"" << itr->first << "\" : " << itr->second;
+        ++itr;
+        if (itr != obj->_items.end())
+        {
+            os << "," << std::endl;
+        }
+        else
+        {
+            os << std::endl;
+        }
     }
-    
+
     os << "}";
     return os;
 }
@@ -410,16 +465,35 @@ std::ostream& operator<<(std::ostream& os, const Object* obj)
 Value* Object::operator[](const char* key)
 {
     json::Object::VALUES::iterator itr = _items.begin();
-    for( ; itr != _items.end(); ++itr )
+    for (; itr != _items.end(); ++itr)
     {
-	if( itr->first == key )
-	{
-	    return itr->second;
-	}
+        if (itr->first == key)
+        {
+            return itr->second;
+        }
     }
     return NULL;
 }
-    
+
+const std::string& Object::key(unsigned int index)
+{
+    if( _items.size() > index )
+    {
+        VALUE& v = _items[index];
+        return v.first;
+    }
+    return NULL;
+}
+
+Value* Object::operator[](unsigned int index)
+{
+    if( _items.size() > index )
+    {
+        VALUE v = _items[index];
+        return v.second;
+    }
+    return NULL;
+}
 
 Parse::Parse()
 {
@@ -428,61 +502,31 @@ Parse::Parse()
 Value* Parse::read(uint8_t* b)
 {
     uint32_t line = 1;
-    return Object::parse(b,line);
+    return Object::parse(b, line);
 }
 
 std::ostream& operator<<(std::ostream& os, const json::Value* obj)
 {
-    switch( obj->getType() )
+    switch (obj->getType())
     {
     case json::OBJECT:
-	os << dynamic_cast<const json::Object*>(obj);
-	break;
+        os << dynamic_cast<const json::Object*>(obj);
+        break;
     case json::ARRAY:
-	os << dynamic_cast<const json::Array*>(obj);
-	break;
+        os << dynamic_cast<const json::Array*>(obj);
+        break;
     case json::NUMBER:
         os << dynamic_cast<const json::Number*>(obj);
-	break;
+        break;
     case json::STRING:
         os << dynamic_cast<const json::String*>(obj);
-	break;
+        break;
     default:
-	os << "Invalid object " << obj->getType() << std::endl;
-	break;
+        os << "Invalid object " << obj->getType() << std::endl;
+        break;
     }
-    return os;	    
+    return os;
 }
 
 } // namespace json
 
-/*
-#include <string.h>
-
-int main( int argc,char* argv[])
-{
-    json::Parse p;
-    FILE* fd = fopen(argv[1],"r");
-    if( fd == NULL )
-    {
-	fprintf(stderr,"Failed to read file %s",argv[1]);
-	return -1;
-    }
-    uint8_t* buffer = (uint8_t*)malloc(1024);
-    memset(buffer,0,1024);
-    fread (buffer,1,1024,fd);
-     
-    printf("-----------------\n%s\n------------------\n",buffer);
-    json::Value* v = p.read(buffer);
-    free(buffer);
-    
-    if( v == NULL )
-    {
-	std::cout << "ERROR!" << std::endl;
-	return -1;
-    }
-    std::cout << (const json::Value*)v << std::endl;
-    delete v;
-    return 0;
-}
-*/
