@@ -26,6 +26,11 @@ String::String()
 {
 }
 
+String::String(const char* value)
+{
+    _value = value;
+}
+
 String::~String()
 {
 }
@@ -57,9 +62,10 @@ bool String::parse_string(std::string& id, uint8_t*& b, uint32_t& line)
     id = "";
 
     while ((*b == ' ') ||
-        (*b == '!') ||
-        (*b >= '#' && *b <= '[') ||
-        (*b >= ']' && *b <= '~'))
+           (*b == '!') ||
+           (*b == '\\') ||
+           (*b >= '#' && *b <= '[') ||
+           (*b >= ']' && *b <= '~'))
     {
         id += *(char*)b;
         ++b;

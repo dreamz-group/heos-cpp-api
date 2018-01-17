@@ -49,6 +49,7 @@ public:
         }
     }
     static Value* parse(uint8_t*& b, uint32_t& line);
+    virtual std::string str() const = 0;    
 };
 } // namespace json
 #endif // __NUMBER_H__

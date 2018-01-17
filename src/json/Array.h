@@ -30,6 +30,8 @@ public:
     virtual ~Array();
     virtual type_t getType() const;
     static Value* parse(uint8_t*& b, uint32_t& line);
+    virtual std::string str() const;
+
 protected:
     typedef std::vector<Value*> VALUES;
     VALUES _items;

@@ -60,6 +60,11 @@ Value* Bool::parse(uint8_t*& b, uint32_t& line)
     return NULL;
 }
 
+std::string Bool::str() const
+{
+    return std::string(_value ? "true" : "false");
+}
+
 std::ostream& operator<<(std::ostream& os, const Bool* obj)
 {
     os << (obj->_value ? "true" : "false");

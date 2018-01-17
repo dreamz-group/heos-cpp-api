@@ -14,6 +14,8 @@
     You should have received a copy of the GNU General Public License
     along with heos-cpp-api.  If not, see <http://www.gnu.org/licenses/>.
 */
+#include <sstream>
+
 #include "Object.h"
 #include "String.h"
 
@@ -36,6 +38,11 @@ Object::~Object()
 type_t Object::getType() const
 {
     return OBJECT;
+}
+
+void Object::Add(const std::string& name, Value* value)
+{
+    _items.push_back(VALUE(name, value));
 }
 
 bool Object::value_pair(Object* obj, uint8_t*& b, uint32_t& line, bool& more)
@@ -83,6 +90,7 @@ Value* Object::parse(uint8_t*& b, uint32_t& line)
         return NULL;
     }
     ++b;
+    skip(b, line);
     Object* obj = new Object();
     if (*b == '}')
     {
@@ -94,6 +102,7 @@ Value* Object::parse(uint8_t*& b, uint32_t& line)
     {
         if (!obj->value_pair(obj, b, line, more))
         {
+            delete obj;
             return NULL;
         }
     }
@@ -105,6 +114,13 @@ Value* Object::parse(uint8_t*& b, uint32_t& line)
     }
     ++b;
     return obj;
+}
+
+std::string Object::str() const
+{
+    std::stringstream sstr;
+    sstr << this;
+    return sstr.str();
 }
 
 std::ostream& operator<<(std::ostream& os, const Object* obj)

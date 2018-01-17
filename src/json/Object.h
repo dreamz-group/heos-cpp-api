@@ -30,6 +30,7 @@ public:
     virtual ~Object();
 
     virtual type_t getType() const;
+    virtual std::string str() const;
 
     static Value* parse(uint8_t*& b, uint32_t& line);
     // Give a key as index for values.
@@ -39,6 +40,8 @@ public:
 
     // Give integer as index to get a key;
     const std::string& key(unsigned int index);
+
+    void Add(const std::string& name, Value* value);
 
 protected:
     typedef std::pair<std::string, Value*> VALUE;

@@ -14,6 +14,8 @@
     You should have received a copy of the GNU General Public License
     along with heos-cpp-api.  If not, see <http://www.gnu.org/licenses/>.
 */
+#include <sstream>
+
 #include "Array.h"
 
 namespace json
@@ -84,6 +86,13 @@ Value* Array::parse(uint8_t*& b, uint32_t& line)
     }
     ++b;
     return arr;
+}
+
+std::string Array::str() const
+{
+    std::stringstream sstr;
+    sstr << this;
+    return sstr.str();
 }
 
 std::ostream& operator<<(std::ostream& os, const Array* arr)

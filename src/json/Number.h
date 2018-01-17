@@ -44,6 +44,7 @@ public:
     Number(double v);
     virtual ~Number();
     virtual type_t getType() const;
+    virtual std::string str() const;
     static Value* parse(uint8_t*& b, uint32_t& line);
     uint64_t value();
 private:

@@ -27,6 +27,7 @@ class String : public virtual Value
     std::string _value;
 public:
     String();
+    String(const char* value);
     virtual ~String();
     virtual type_t getType() const;
     static Value* parse(uint8_t*& b, uint32_t& line);
@@ -34,7 +35,7 @@ public:
     inline bool operator==(const char* str) { return _value == str; }
     inline bool operator!=(const char* str) { return _value != str; }
     inline const char*        c_str() { return _value.c_str(); }
-    inline const std::string& str() { return _value; }
+    virtual std::string str() const { return _value; }
 
 private:
     friend std::ostream& operator<<(std::ostream& os, const String* obj);

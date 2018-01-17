@@ -16,6 +16,7 @@
 */
 #include <assert.h>
 #include <math.h>
+#include <sstream>
 
 #include "Number.h"
 
@@ -97,6 +98,13 @@ Value* Number::parse(uint8_t*& b, uint32_t& line)
         return new Number(neg ? -dbl : dbl);
     }
     return neg ? new Number(-(int64_t)value) : new Number(value);
+}
+
+std::string Number::str() const
+{
+    std::stringstream sstr;
+    sstr << this;
+    return sstr.str();
 }
 
 std::ostream& operator<<(std::ostream& os, const Number* obj)
