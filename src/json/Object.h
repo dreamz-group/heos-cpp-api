@@ -39,7 +39,7 @@ public:
     Value* operator[](unsigned int index);
 
     // Give integer as index to get a key;
-    const std::string& key(unsigned int index);
+    bool key(unsigned int index, std::string& out);
 
     void Add(const std::string& name, Value* value);
 

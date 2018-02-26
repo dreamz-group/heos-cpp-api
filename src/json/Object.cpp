@@ -158,14 +158,15 @@ Value* Object::operator[](const char* key)
     return NULL;
 }
 
-const std::string& Object::key(unsigned int index)
+bool Object::key(unsigned int index, std::string& out)
 {
     if( _items.size() > index )
     {
         VALUE& v = _items[index];
-        return v.first;
+        out = v.first;
+        return true;
     }
-    return NULL;
+    return false;
 }
 
 Value* Object::operator[](unsigned int index)
