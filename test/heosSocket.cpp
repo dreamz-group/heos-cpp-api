@@ -134,7 +134,7 @@ int main(int argc,char* argv[])
 	delete v;
 	return -1;
     }
-    for( int i=0; i < values.size(); ++i )
+    for( size_t i=0; i < values.size(); ++i )
     {
 	std::cout << *values[i] << std::endl;
     }

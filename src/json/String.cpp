@@ -62,11 +62,13 @@ bool String::parse_string(std::string& id, uint8_t*& b, uint32_t& line)
     id = "";
 
     while ((*b == ' ') ||
-           (*b == '!') ||
-           (*b == '\\') ||
-           (*b >= '#' && *b <= '[') ||
-           (*b >= ']' && *b <= '~'))
+           (*b == '!') ||           
+           (*b >= '#' && *b <= '~'))
     {
+        if( *b == '\\')
+        {            
+            id += *(char*)b; ++b;   
+        }
         id += *(char*)b;
         ++b;
     }

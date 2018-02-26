@@ -110,7 +110,7 @@ int Command::parse(const std::string& buf,Command& rtn)
     return rtn._internal.size();
 }
 
-const CommandValue* Command::operator[](int i)
+const CommandValue* Command::operator[](unsigned int i)
 {
     if( _internal.size() < i )
     {

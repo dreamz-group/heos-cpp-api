@@ -18,17 +18,17 @@
 #include <unistd.h>
 namespace RepeatMode
 {
-    static const char* no_change = "";
-    static const char* off       = "off";
-    static const char* one       = "on_one";
-    static const char* all       = "on_all";
+    const char* no_change = "";
+    const char* off       = "off";
+    const char* one       = "on_one";
+    const char* all       = "on_all";
 }
 
 namespace ShuffleMode
 {
-    static const char* no_change = "";
-    static const char* off       = "off";
-    static const char* on        = "on";
+    const char* no_change = "";
+    const char* off       = "off";
+    const char* on        = "on";
 }
 
 class heosSocket

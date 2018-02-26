@@ -52,7 +52,7 @@ public:
     ~Command();
 
     static int parse(const std::string& buf,Command& rtn);
-    const CommandValue* operator[](int i);
+    const CommandValue* operator[](unsigned int i);
     const char* operator[](const char* key);    
     inline size_t size()
     {

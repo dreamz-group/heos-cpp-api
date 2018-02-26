@@ -109,7 +109,7 @@ int heosSocket::Write(uint8_t* buf, size_t len)
 	return -1;
     }
     
-    if( rtn != len )
+    if( (size_t)rtn != len )
     {
 	snprintf(error,sizeof(error),"Failed to write compeate message: %s",strerror(errno));
 	close(_socket);
