@@ -1,0 +1,3 @@
+[submodule "src/libjson"]
+	path = src/libjson
+	url = git@github.com:dreamz-group/libjson.git
