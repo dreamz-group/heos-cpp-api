@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.5)
 project(heos-cpp-api)
 
 file(GLOB SOURCE *.cpp )
-add_subdirectory (json)
+add_subdirectory (libjson)
 
 add_library(heos-cpp-api SHARED ${SOURCE})
 target_link_libraries (heos-cpp-api LINK_PUBLIC json)
